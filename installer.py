@@ -1,1 +1,1 @@
-# TODO https://oxylabs.io/blog/python-script-service-guide
+# TODO: https://oxylabs.io/blog/python-script-service-guide
