@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/sys.mon installer.iml" filepath="$PROJECT_DIR$/.idea/sys.mon installer.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/sys.mon scripts.iml" filepath="$PROJECT_DIR$/.idea/sys.mon scripts.iml" />
     </modules>
   </component>
 </project>

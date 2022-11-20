@@ -24,8 +24,8 @@ def send_request(method, url, pl):
                 return requests.post(url, json=pl)
             if method == "patch":
                 return requests.patch(url, json=pl)
-        except ConnectionError or Exception:
-            print('waiting for connection...')
+        except Exception as e:
+            print(e, 'waiting for connection...')
             time.sleep(10)
 
 
@@ -54,6 +54,7 @@ def gen_data():
 
 
 async def handler(ws):
+    print(ws, 'got conn')
     try:
         async for message in ws:
             print("RECEIVED: ", message)
@@ -114,7 +115,7 @@ if __name__ == "__main__":
             p_info("RESPONSE:", requests.post(API_URL + "/api/system/activity", json={
                 "sys_id": system_config['sys_id'],
                 "v_token": system_config['v_token'],
-                "signal": sig
+                "activity": ["SHUTDOWN", f"desc: {str(sig)}", "mon shutting down!"]
             }).status_code, pre="INFO")
         except ConnectionError or TimeoutError or Exception as err:
             p_info(err, pre="ERROR")
