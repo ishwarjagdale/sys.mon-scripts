@@ -19,7 +19,7 @@ Commands:
     register    To sign up
     verify      To activate account
     login       To log in
-    install     To register current system
+    init        To register current system
     status      To see status and enable/disable mon agent
 
     # In progress
