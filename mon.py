@@ -3,7 +3,8 @@ import json
 import signal
 import time
 from sys import exit
-
+import platform as plt
+from cpuinfo import get_cpu_info
 import psutil
 import requests
 import websockets
@@ -53,6 +54,28 @@ def gen_data():
     return json.dumps(data)
 
 
+def gen_spec():
+    uname_result = plt.uname()
+    cpu_info = get_cpu_info()
+    cores, l_cores = psutil.cpu_count(False), psutil.cpu_count()
+    spec = {
+        "Node": uname_result.node,
+        "Operating System Name": uname_result.system,
+        "Operating System Version": uname_result.version,
+        "Machine": uname_result.machine,
+        "Processor": {
+            "Processor Name": cpu_info['brand_raw'],
+            "Base Frequency": cpu_info['hz_actual_friendly'],
+            "Number of Cores (Logical Cores)": f"{cores} ({l_cores})",
+            "Architecture": cpu_info['arch']
+        },
+        "Memory": {
+            "Total Physical Memory": f"{round(psutil.virtual_memory().total / 2 ** 30, 2)} GB"
+        }
+    }
+    return json.dumps(spec)
+
+
 async def handler(ws):
     print(ws, 'got conn')
     try:
@@ -60,6 +83,8 @@ async def handler(ws):
             print("RECEIVED: ", message)
             if message == "cpd":
                 await ws.send(gen_data())
+            elif message == "spec":
+                await ws.send(gen_spec())
             else:
                 await ws.send(gen_data())
     except websockets.WebSocketException as err:
