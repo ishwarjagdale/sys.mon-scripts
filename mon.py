@@ -50,8 +50,7 @@ def gen_data():
         "disk": f"{round(used * 100 / total, 2)}%"
     }
 
-    print("SENDING: ", data)
-    return json.dumps(data)
+    return json.dumps({"stats": data})
 
 
 def gen_spec():
@@ -73,14 +72,13 @@ def gen_spec():
             "Total Physical Memory": f"{round(psutil.virtual_memory().total / 2 ** 30, 2)} GB"
         }
     }
-    return json.dumps(spec)
+    return json.dumps({"spec": spec})
 
 
 async def handler(ws):
     print(ws, 'got conn')
     try:
         async for message in ws:
-            print("RECEIVED: ", message)
             if message == "cpd":
                 await ws.send(gen_data())
             elif message == "spec":

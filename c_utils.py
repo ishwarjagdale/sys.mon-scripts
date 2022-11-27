@@ -3,7 +3,8 @@ from getpass import getpass
 from sys import exit
 from os import get_terminal_size
 
-API_URL = "http://localhost:5000"
+# API_URL = "http://localhost:5000"
+API_URL = "https://sys-mon.herokuapp.com"
 
 
 def header(text, fill="="):
