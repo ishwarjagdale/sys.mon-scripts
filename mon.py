@@ -1,6 +1,7 @@
 import asyncio
 import json
 import signal
+import sys
 import time
 from sys import exit
 import platform as plt
@@ -114,6 +115,9 @@ if __name__ == "__main__":
     system_config = Systems.load_config()
     if not system_config:
         exit(1)
+    print(sys.argv)
+    if len(sys.argv) == 2:
+        PORT = sys.argv[1]
 
     # TODO: make this work
     # p_info("Connecting server...", pre="INFO")
