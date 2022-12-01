@@ -15,6 +15,7 @@ from systems import Systems
 
 HOST = '0.0.0.0'
 PORT = ''
+rules = None
 
 
 def send_request(method, url, pl):
@@ -84,8 +85,11 @@ async def handler(ws):
                 await ws.send(gen_data())
             elif message == "spec":
                 await ws.send(gen_spec())
+            elif message == "update_mon":
+                print("Received: update_mon")
+                update_mon()
             else:
-                await ws.send(gen_data())
+                await ws.send(message)
     except websockets.WebSocketException as err:
         print("\nConnection CLOSED: ", err)
 
@@ -102,12 +106,48 @@ async def main():
         }
 
         p_info("Sending patch request...", pre="INFO", end=' ')
-        if send_request("patch", API_URL + "/api/system", payload).status_code == 200:
+        if send_request("patch", API_URL + "/api/system/mon", payload).status_code == 200:
             print("PATCHED")
             p_info("Listening for connections...", pre="INFO")
             await asyncio.Future()
 
         exit(1)
+
+
+def shutdown(sig, frame):
+    header("SHUT DOWN")
+    p_info("SHUTDOWN SIGNAL RECEIVED - Notifying server...", pre="INFO")
+    try:
+        p_info("RESPONSE:", requests.post(API_URL + "/api/system/activity", json={
+            "sys_id": system_config['sys_id'],
+            "v_token": system_config['v_token'],
+            "activity": ["SHUTDOWN", f"desc: {str(sig)}", "mon shutting down!"]
+        }).status_code, pre="INFO")
+    except ConnectionError or TimeoutError or Exception as err:
+        p_info(err, pre="ERROR")
+    p_info("Exiting...", pre="INFO")
+    exit(0)
+
+
+def update_mon():
+    global rules
+    p_info("Connecting server...", pre="INFO")
+    res = send_request("get", API_URL + "/api/system/mon", {
+        "sys_id": system_config['sys_id'],
+        "v_token": system_config['v_token']
+    })
+    if res.status_code == 200:
+        res = res.json()
+        if not res['enable_mon']:
+            p_info("MON DISABLED", pre="INFO")
+            p_info("Exiting...", pre="INFO")
+            exit(0)
+        else:
+            rules = res['rules']
+            print("rules", rules)
+    else:
+        p_info(f"{res.status_code} Exiting...", pre="INFO")
+        exit(0)
 
 
 if __name__ == "__main__":
@@ -119,36 +159,7 @@ if __name__ == "__main__":
     if len(sys.argv) == 2:
         PORT = sys.argv[1]
 
-    # TODO: make this work
-    # p_info("Connecting server...", pre="INFO")
-    # res = send_request("get", API_URL + "/api/system", {
-    #     "sys_id": system_config['sys_id'],
-    #     "v_token": system_config['v_token']
-    # })
-    # print(res.__dict__)
-    # if res.status_code == 200:
-    #     if not res.json()['enable_mon']:
-    #         p_info("MON DISABLED", pre="INFO")
-    #         p_info("Exiting...", pre="INFO")
-    #         exit(0)
-    # else:
-    #     p_info("Exiting...", pre="INFO")
-    #     exit(0)
-
-    def shutdown(sig, frame):
-        header("SHUT DOWN")
-        p_info("SHUTDOWN SIGNAL RECEIVED - Notifying server...", pre="INFO")
-        try:
-            p_info("RESPONSE:", requests.post(API_URL + "/api/system/activity", json={
-                "sys_id": system_config['sys_id'],
-                "v_token": system_config['v_token'],
-                "activity": ["SHUTDOWN", f"desc: {str(sig)}", "mon shutting down!"]
-            }).status_code, pre="INFO")
-        except ConnectionError or TimeoutError or Exception as err:
-            p_info(err, pre="ERROR")
-        p_info("Exiting...", pre="INFO")
-        exit(0)
-
+    update_mon()
 
     signal.signal(signal.SIGTERM, shutdown)
     signal.signal(signal.SIGINT, shutdown)
