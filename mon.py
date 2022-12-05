@@ -9,13 +9,48 @@ from cpuinfo import get_cpu_info
 import psutil
 import requests
 import websockets
-
+import threading
 from c_utils import API_URL, p_info, header
 from systems import Systems
 
 HOST = '0.0.0.0'
 PORT = ''
-rules = None
+rules = dict()
+
+stats = {
+    "cpu": 0,
+    "mem": 0,
+    "disk": 0
+}
+
+
+def report(resource, rule, _stats):
+    p_info("Reporting server...")
+    res = send_request('post', API_URL + '/api/system/mon', pl={
+        "sys_id": system_config['sys_id'],
+        "v_token": system_config['v_token'],
+        "report": {
+            "activity": {
+                "resource": resource,
+                "rule": rule,
+                "message": f"{resource} crossed {rule['max_limit']}%"
+            },
+            "stats": _stats
+        }
+    })
+    if res.status_code != 200:
+        p_info("Reporting failed!", res.status_code)
+
+
+def monitor():
+    global stats, rules
+    while True:
+        stats = gen_data()
+        for r in stats:
+            if r in rules:
+                if stats[r] >= rules[r]['max_limit']:
+                    print("sys in trouble", stats)
+                    report(r, rules[r], stats)
 
 
 def send_request(method, url, pl):
@@ -47,12 +82,12 @@ def gen_data():
     cpu = psutil.cpu_percent(1)
 
     data = {
-        "cpu": f"{cpu}%",
-        "mem": f"{mem.percent}%",
-        "disk": f"{round(used * 100 / total, 2)}%"
+        "cpu": cpu,
+        "mem": mem.percent,
+        "disk": round(used * 100 / total, 2)
     }
 
-    return json.dumps({"stats": data})
+    return data
 
 
 def gen_spec():
@@ -82,14 +117,14 @@ async def handler(ws):
     try:
         async for message in ws:
             if message == "cpd":
-                await ws.send(gen_data())
+                time.sleep(1)
+                await ws.send(json.dumps({"stats": stats}))
             elif message == "spec":
                 await ws.send(gen_spec())
             elif message == "update_mon":
-                print("Received: update_mon")
                 update_mon()
             else:
-                await ws.send(message)
+                await ws.send(json.dumps({"stats": stats}))
     except websockets.WebSocketException as err:
         print("\nConnection CLOSED: ", err)
 
@@ -144,7 +179,6 @@ def update_mon():
             exit(0)
         else:
             rules = res['rules']
-            print("rules", rules)
     else:
         p_info(f"{res.status_code} Exiting...", pre="INFO")
         exit(0)
@@ -155,7 +189,6 @@ if __name__ == "__main__":
     system_config = Systems.load_config()
     if not system_config:
         exit(1)
-    print(sys.argv)
     if len(sys.argv) == 2:
         PORT = sys.argv[1]
 
@@ -163,6 +196,8 @@ if __name__ == "__main__":
 
     signal.signal(signal.SIGTERM, shutdown)
     signal.signal(signal.SIGINT, shutdown)
+
+    threading.Thread(target=monitor, ).start()
 
     try:
         asyncio.run(main())
