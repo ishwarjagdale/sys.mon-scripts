@@ -1,5 +1,7 @@
 import asyncio
+import datetime
 import json
+import os.path
 import signal
 import sys
 import time
@@ -12,6 +14,7 @@ import websockets
 import threading
 from c_utils import API_URL, p_info, header
 from systems import Systems
+from collections import defaultdict
 
 HOST = '0.0.0.0'
 PORT = ''
@@ -43,14 +46,24 @@ def report(resource, rule, _stats):
 
 
 def monitor():
-    global stats, rules
+    global rules
+    secs = defaultdict(list)
     while True:
-        stats = gen_data()
-        for r in stats:
+        _10_sec = gen_data(10)
+        for r in _10_sec:
+            secs[r].append(_10_sec[r])
             if r in rules:
-                if stats[r] >= rules[r]['max_limit']:
-                    print("sys in trouble", stats)
-                    report(r, rules[r], stats)
+                if _10_sec[r] >= rules[r]['max_limit']:
+                    print("sys in trouble", _10_sec)
+                    report(r, rules[r], _10_sec)
+        if len(secs[list(secs.keys())[0]]) == 360:
+            for i in secs:
+                secs[i] = sum(secs[i]) / 360
+            if not os.path.exists(os.path.join(os.path.expanduser("~"), "sysmon")):
+                os.mkdir(os.path.join(os.path.expanduser("~"), "sysmon"))
+            with open(os.path.join(os.path.expanduser("~"), "sysmon", "hourly_logs.txt"), 'a+') as log:
+                log.write(f"[{datetime.datetime.now()}]: {str(secs)}\n")
+            secs.clear()
 
 
 def send_request(method, url, pl):
@@ -67,7 +80,7 @@ def send_request(method, url, pl):
             time.sleep(10)
 
 
-def gen_data():
+def gen_data(span=1):
     # RAM
     mem = psutil.virtual_memory()
 
@@ -79,7 +92,7 @@ def gen_data():
         used += disk.used
 
     # CPU
-    cpu = psutil.cpu_percent(1)
+    cpu = psutil.cpu_percent(span)
 
     data = {
         "cpu": cpu,
@@ -113,18 +126,17 @@ def gen_spec():
 
 
 async def handler(ws):
-    print(ws, 'got conn')
+    p_info("New connection:", ws.request_headers["Origin"], pre="INFO")
     try:
         async for message in ws:
             if message == "cpd":
-                time.sleep(1)
-                await ws.send(json.dumps({"stats": stats}))
+                await ws.send(json.dumps({"stats": gen_data()}))
             elif message == "spec":
                 await ws.send(gen_spec())
             elif message == "update_mon":
                 update_mon()
             else:
-                await ws.send(json.dumps({"stats": stats}))
+                await ws.send(json.dumps({"stats": gen_data()}))
     except websockets.WebSocketException as err:
         print("\nConnection CLOSED: ", err)
 
@@ -166,12 +178,13 @@ def shutdown(sig, frame):
 
 def update_mon():
     global rules
-    p_info("Connecting server...", pre="INFO")
+    p_info("Connecting server...", pre="INFO", end=' ')
     res = send_request("get", API_URL + "/api/system/mon", {
         "sys_id": system_config['sys_id'],
         "v_token": system_config['v_token']
     })
     if res.status_code == 200:
+        print("ok")
         res = res.json()
         if not res['enable_mon']:
             p_info("MON DISABLED", pre="INFO")
@@ -197,7 +210,7 @@ if __name__ == "__main__":
     signal.signal(signal.SIGTERM, shutdown)
     signal.signal(signal.SIGINT, shutdown)
 
-    threading.Thread(target=monitor, ).start()
+    threading.Thread(target=monitor, daemon=True).start()
 
     try:
         asyncio.run(main())
