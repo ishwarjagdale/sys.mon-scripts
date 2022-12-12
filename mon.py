@@ -62,7 +62,8 @@ def monitor():
             if not os.path.exists(os.path.join(os.path.expanduser("~"), "sysmon")):
                 os.mkdir(os.path.join(os.path.expanduser("~"), "sysmon"))
             with open(os.path.join(os.path.expanduser("~"), "sysmon", "hourly_logs.txt"), 'a+') as log:
-                log.write(f"[{datetime.datetime.now()}]: {str(secs)}\n")
+                json.dump({f"{datetime.datetime.now()}": secs}, log)
+                log.write("\n")
             secs.clear()
 
 
