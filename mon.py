@@ -7,6 +7,8 @@ import sys
 import time
 from sys import exit
 import platform as plt
+
+import pandas
 from cpuinfo import get_cpu_info
 import psutil
 import requests
@@ -24,6 +26,12 @@ stats = {
     "cpu": 0,
     "mem": 0,
     "disk": 0
+}
+
+time_period = {
+    "hour": 1,
+    "week": 7,
+    "month": 30
 }
 
 
@@ -126,6 +134,24 @@ def gen_spec():
     return json.dumps({"spec": spec})
 
 
+def gen_report(t):
+    global time_period
+    data = {}
+    with open(os.path.join(os.path.expanduser("~"), "sysmon", "hourly_logs.txt"), 'r') as log:
+        while log:
+            chunk = log.readline().strip()
+            if chunk:
+                line = list((json.loads(chunk)).items())[0]
+                if (datetime.datetime.now() - datetime.datetime.fromisoformat(line[0])).days <= time_period[t]:
+                    data[datetime.datetime.fromisoformat(line[0])] = line[1]
+                else:
+                    continue
+            else:
+                break
+    df = pandas.DataFrame.from_dict(data=data, orient="index")
+    return df.to_json(date_format="iso")
+
+
 async def handler(ws):
     p_info("New connection:", ws.request_headers["Origin"], pre="INFO")
     try:
@@ -136,6 +162,8 @@ async def handler(ws):
                 await ws.send(gen_spec())
             elif message == "update_mon":
                 update_mon()
+            elif message.startswith("report"):
+                await ws.send('{"report": ' + gen_report(message.split("-")[1]) + '}')
             else:
                 await ws.send(json.dumps({"stats": gen_data()}))
     except websockets.WebSocketException as err:

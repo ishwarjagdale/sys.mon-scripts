@@ -10,7 +10,7 @@ class Authentication:
     def save_credentials(credentials, res):
         print(res.cookies.values())
         try:
-            with open(os.path.join(os.path.expanduser("~"), "sysmon_cli.config"), 'w') as config:
+            with open(os.path.join(os.path.expanduser("~"), "sysmon", "sysmon_cli.config"), 'w') as config:
                 json.dump({
                     "name": res.json()['name'],
                     "email": credentials['email'],
@@ -23,7 +23,7 @@ class Authentication:
     @staticmethod
     def load_credentials():
         try:
-            with open(os.path.join(os.path.expanduser("~"), "sysmon_cli.config"), 'r') as config:
+            with open(os.path.join(os.path.expanduser("~"), "sysmon", "sysmon_cli.config"), 'r') as config:
                 credentials = json.load(config)
                 if "email" in credentials and "session_token" in credentials:
                     return credentials
@@ -95,7 +95,7 @@ class Authentication:
         else:
             p_info("Needs re-verification.", pre="ERROR")
             try:
-                os.remove(os.path.join(os.path.expanduser("~"), "sysmon_cli.config"))
+                os.remove(os.path.join(os.path.expanduser("~"), "sysmon", "sysmon_cli.config"))
             except OSError as e:
                 p_info(e, pre="ERROR")
 
@@ -138,7 +138,7 @@ class Authentication:
         else:
             p_info("No log in session found", pre="INFO")
         try:
-            os.remove(os.path.join(os.path.expanduser("~"), 'sysmon_cli.config'))
+            os.remove(os.path.join(os.path.expanduser("~"), "sysmon", 'sysmon_cli.config'))
         except OSError or Exception:
             if credentials:
                 p_info("Couldn't remove config file", pre="ERROR")
