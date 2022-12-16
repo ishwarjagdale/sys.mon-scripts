@@ -14,10 +14,10 @@ class Systems:
 
     @staticmethod
     def load_config():
-        if not os.path.exists(os.path.join(os.path.expanduser("~"), "sysmon", 'sysmon_agent.config')):
+        if not os.path.exists(os.path.join(os.path.expanduser("~"), ".sysmon", 'sysmon_agent.config')):
             return False
         try:
-            with open(os.path.join(os.path.expanduser("~"), "sysmon", 'sysmon_agent.config'), 'r') as config:
+            with open(os.path.join(os.path.expanduser("~"), ".sysmon", 'sysmon_agent.config'), 'r') as config:
                 system = json.load(config)
                 if "sys_id" in system and "v_token" in system:
                     return system
@@ -29,7 +29,7 @@ class Systems:
     @staticmethod
     def save_config(configurations):
         try:
-            with open(os.path.join(os.path.expanduser("~"), "sysmon", "sysmon_agent.config"), 'w') as config:
+            with open(os.path.join(os.path.expanduser("~"), ".sysmon", "sysmon_agent.config"), 'w') as config:
                 json.dump(configurations, config)
             return True
         except OSError or Exception as e:

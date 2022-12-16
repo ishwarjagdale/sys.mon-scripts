@@ -67,9 +67,9 @@ def monitor():
         if len(secs[list(secs.keys())[0]]) == 360:
             for i in secs:
                 secs[i] = sum(secs[i]) / 360
-            if not os.path.exists(os.path.join(os.path.expanduser("~"), "sysmon")):
-                os.mkdir(os.path.join(os.path.expanduser("~"), "sysmon"))
-            with open(os.path.join(os.path.expanduser("~"), "sysmon", "hourly_logs.txt"), 'a+') as log:
+            if not os.path.exists(os.path.join(os.path.expanduser("~"), ".sysmon")):
+                os.mkdir(os.path.join(os.path.expanduser("~"), ".sysmon"))
+            with open(os.path.join(os.path.expanduser("~"), ".sysmon", "hourly_logs.txt"), 'a+') as log:
                 json.dump({f"{datetime.datetime.now()}": secs}, log)
                 log.write("\n")
             secs.clear()
@@ -137,7 +137,7 @@ def gen_spec():
 def gen_report(t):
     global time_period
     data = {}
-    with open(os.path.join(os.path.expanduser("~"), "sysmon", "hourly_logs.txt"), 'r') as log:
+    with open(os.path.join(os.path.expanduser("~"), ".sysmon", "hourly_logs.txt"), 'r') as log:
         while log:
             chunk = log.readline().strip()
             if chunk:
