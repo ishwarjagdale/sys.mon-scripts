@@ -2,21 +2,21 @@ import asyncio
 import datetime
 import json
 import os.path
+import platform as plt
 import signal
 import sys
+import threading
 import time
+from collections import defaultdict
 from sys import exit
-import platform as plt
 
 import pandas
-from cpuinfo import get_cpu_info
 import psutil
 import requests
 import websockets
-import threading
+from cpuinfo import get_cpu_info
+
 from c_utils import API_URL, p_info, header
-from systems import Systems
-from collections import defaultdict
 
 HOST = '0.0.0.0'
 PORT = ''
@@ -222,13 +222,18 @@ def update_mon():
         else:
             rules = res['rules']
     else:
-        p_info(f"{res.status_code} Exiting...", pre="INFO")
+        print()
+        p_info(f"{res.status_code} - {res.json()['message']} Exiting...", pre="ERROR")
         exit(0)
 
 
 if __name__ == "__main__":
 
-    system_config = Systems.load_config()
+    with open(os.path.join(os.path.expanduser('~'), ".sysmon", "sysmon_agent.config"), 'r') as conf:
+        system_config = json.load(conf)
+        if not ("sys_id" in system_config and "v_token" in system_config):
+            p_info("Wrong configuration file, re-install mon", pre="ERROR")
+            exit(1)
     if not system_config:
         exit(1)
     if len(sys.argv) == 2:

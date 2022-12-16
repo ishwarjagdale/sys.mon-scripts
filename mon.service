@@ -1,0 +1,13 @@
+[Unit]
+Description=A script for monitoring system performance
+After=syslog.target.network.target
+
+[Service]
+WorkingDirectory=~/.sysmon
+ExecStart=/usr/bin/python3 mon.py
+
+Restart=always
+RestartSec=100
+
+[Install]
+WantedBy=multi-user.target
