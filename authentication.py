@@ -10,6 +10,7 @@ class Authentication:
     def save_credentials(credentials, res):
         print(res.cookies.values())
         try:
+            os.mkdir(os.path.join(os.path.expanduser("~"), ".sysmon"))
             with open(os.path.join(os.path.expanduser("~"), ".sysmon", "sysmon_cli.config"), 'w') as config:
                 json.dump({
                     "name": res.json()['name'],
