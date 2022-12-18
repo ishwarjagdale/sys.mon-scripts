@@ -9,7 +9,7 @@ import threading
 import time
 from collections import defaultdict
 from sys import exit
-
+from notifypy import Notify
 import pandas
 import psutil
 import requests
@@ -229,6 +229,18 @@ def update_mon():
 
 if __name__ == "__main__":
 
+    try:
+        notif = Notify()
+        notif.title = "Mon"
+        notif.message = "Mon started!"
+        notif.application_name = "SysMon"
+        notif.icon = os.path.join(os.path.dirname(__file__), "favicon.png")
+        notif.send()
+    except Exception as e:
+        notif = Notify()
+        notif.message = e
+        notif.send()
+
     with open(os.path.join(os.path.expanduser('~'), ".sysmon", "sysmon_agent.config"), 'r') as conf:
         system_config = json.load(conf)
         if not ("sys_id" in system_config and "v_token" in system_config):
@@ -239,12 +251,12 @@ if __name__ == "__main__":
     if len(sys.argv) == 2:
         PORT = sys.argv[1]
 
-    update_mon()
-
     signal.signal(signal.SIGTERM, shutdown)
     signal.signal(signal.SIGINT, shutdown)
 
     threading.Thread(target=monitor, daemon=True).start()
+
+    update_mon()
 
     try:
         asyncio.run(main())
