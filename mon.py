@@ -238,7 +238,9 @@ if __name__ == "__main__":
         notif.send()
     except Exception as e:
         notif = Notify()
-        notif.message = e
+        notif.title = "Mon"
+        notif.message = "Mon started!"
+        notif.application_name = "SysMon"
         notif.send()
 
     with open(os.path.join(os.path.expanduser('~'), ".sysmon", "sysmon_agent.config"), 'r') as conf:
