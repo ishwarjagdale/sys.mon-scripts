@@ -137,6 +137,9 @@ def gen_spec():
 def gen_report(t):
     global time_period
     data = {}
+    if not os.path.exists(os.path.join(os.path.expanduser("~"), ".sysmon", "hourly_logs.txt")):
+        with open(os.path.join(os.path.expanduser("~"), ".sysmon", "hourly_logs.txt"), 'w') as log:
+            pass
     with open(os.path.join(os.path.expanduser("~"), ".sysmon", "hourly_logs.txt"), 'r') as log:
         while log:
             chunk = log.readline().strip()
