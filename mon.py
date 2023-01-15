@@ -34,10 +34,20 @@ time_period = {
     "month": 30
 }
 
+previous_report = None
+reporting_time = None
+
 
 def report(resource, rule, _stats):
+    global previous_report, reporting_time
+
+    if previous_report and reporting_time:
+        if rule == previous_report['report']['activity']['rule'] and (
+                datetime.datetime.now() - reporting_time).total_seconds() < 3600:
+            # print(f'suppressing report for {3600 - (datetime.datetime.now() - reporting_time).total_seconds()} seconds')
+            return
     p_info("Reporting server...")
-    res = send_request('post', API_URL + '/api/system/mon', pl={
+    rep = {
         "sys_id": system_config['sys_id'],
         "v_token": system_config['v_token'],
         "report": {
@@ -48,9 +58,12 @@ def report(resource, rule, _stats):
             },
             "stats": _stats
         }
-    })
+    }
+    res = send_request('post', API_URL + '/api/system/mon', pl=rep)
     if res.status_code != 200:
         p_info("Reporting failed!", res.status_code)
+    previous_report = rep
+    reporting_time = datetime.datetime.now()
 
 
 def monitor():
